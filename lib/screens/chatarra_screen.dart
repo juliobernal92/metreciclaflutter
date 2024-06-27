@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:metrecicla_app/screens/add_chatarra_dialog.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:metrecicla_app/controllers/chatarras_controller.dart';
+import 'package:metrecicla_app/screens/add_chatarra_dialog.dart';
 import 'package:metrecicla_app/screens/edit_chatarra_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:metrecicla_app/controllers/api_interceptor.dart';
 
 class ChatarraScreen extends StatefulWidget {
   const ChatarraScreen({super.key});
@@ -12,13 +13,16 @@ class ChatarraScreen extends StatefulWidget {
 }
 
 class _ChatarraScreenState extends State<ChatarraScreen> {
-  final ChatarraController _chatarraController = ChatarraController();
+  late ChatarraController
+      _chatarraController; // Declara _chatarraController como late
+
   List<Map<String, dynamic>> _chatarras = [];
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    _chatarraController = ChatarraController(ApiInterceptor(context));
     _fetchData();
   }
 
@@ -30,7 +34,7 @@ class _ChatarraScreenState extends State<ChatarraScreen> {
     try {
       final String jwt = await _getStoredJwtToken();
       List<Map<String, dynamic>> chatarras =
-          await _chatarraController.fetchChatarras(jwt);
+          await _chatarraController.fetchChatarras();
 
       setState(() {
         _chatarras = chatarras;

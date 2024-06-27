@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:metrecicla_app/screens/login_screen.dart';
 import 'package:metrecicla_app/controllers/login_controller.dart';
+import 'package:metrecicla_app/controllers/api_interceptor.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +21,33 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.green,
       ),
       home: const LoginScreen(),
+      builder: (context, child) {
+        return ApiInterceptorProvider(
+          interceptor: ApiInterceptor(context),
+          child: child!,
+        );
+      },
     );
+  }
+}
+
+class ApiInterceptorProvider extends InheritedWidget {
+  final ApiInterceptor interceptor;
+
+  const ApiInterceptorProvider({
+    super.key,
+    required this.interceptor,
+    required super.child,
+  });
+
+  static ApiInterceptor of(BuildContext context) {
+    return (context
+            .dependOnInheritedWidgetOfExactType<ApiInterceptorProvider>()!)
+        .interceptor;
+  }
+
+  @override
+  bool updateShouldNotify(InheritedWidget oldWidget) {
+    return false;
   }
 }

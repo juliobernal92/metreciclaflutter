@@ -11,4 +11,5 @@ class EndPoints {
   final String editChatarrasService = 'chatarras.php';
   final String addChatarrasService = 'chatarras.php';
   final String deleteChatarrasService = 'chatarras.php';
+  final String getProveedoresService = 'proveedores.php';
 }

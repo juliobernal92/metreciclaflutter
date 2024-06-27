@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http; // Importa http correctamente
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:http/http.dart' as http;
+import 'package:metrecicla_app/controllers/login_controller.dart';
+import 'package:metrecicla_app/screens/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiInterceptor extends http.BaseClient {
@@ -25,21 +29,31 @@ class ApiInterceptor extends http.BaseClient {
       _redirectToLogin();
     }
 
-    return http.StreamedResponse(
-      response.stream,
-      response.statusCode,
-      contentLength: response.contentLength,
-      request: response.request,
-      headers: response.headers,
-      isRedirect: response.isRedirect,
-      persistentConnection: response.persistentConnection,
-      reasonPhrase: response.reasonPhrase,
-    );
+    return response;
   }
 
   void _redirectToLogin() {
-    // Navigate to login screen
-    Navigator.of(context).pushReplacementNamed(
-        '/login'); // Reemplaza con la ruta correcta de tu pantalla de login
+    // Show a dialog indicating that the session has expired
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Sesión expirada'),
+          content: const Text(
+              'Tu sesión ha expirado. Por favor, inicia sesión de nuevo.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Get.find<LoginController>().signOut();
+                Get.offAll(() => const LoginScreen());
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }

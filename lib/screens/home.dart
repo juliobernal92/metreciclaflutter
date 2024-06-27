@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http; // Importa http correctamente
 import 'package:metrecicla_app/controllers/login_controller.dart';
 import 'package:metrecicla_app/screens/dashboard_screen.dart';
 import 'package:metrecicla_app/screens/chatarra_screen.dart';
@@ -8,7 +7,7 @@ import 'package:metrecicla_app/screens/compras_screen.dart';
 import 'package:metrecicla_app/screens/login_screen.dart';
 import 'package:metrecicla_app/screens/proveedores_screen.dart';
 import 'package:metrecicla_app/screens/empleados_screen.dart';
-import 'package:metrecicla_app/controllers/api_interceptor.dart';
+import 'package:metrecicla_app/services/auth_service.dart';
 
 class CustomColors {
   static const Color primaryColor = Color(0xFF4CAF50); // Verde principal
@@ -31,21 +30,15 @@ class _HomeScreenState extends State<HomeScreen> {
     ChatarraScreen(),
     ComprasScreen(),
     ProveedoresScreen(),
-    EmpleadosScreen(),
   ];
-
-  // Cliente HTTP con interceptor
-  late final http.Client _client;
 
   @override
   void initState() {
     super.initState();
-    // Inicializa el cliente HTTP con el interceptor
-    _client = http.Client();
   }
 
   void _onItemTapped(int index) {
-    if (index == 5) {
+    if (index == 4) {
       _showLogoutConfirmationDialog();
     } else {
       setState(() {
@@ -113,10 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.people),
             label: 'Proveedores',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Empleados',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.exit_to_app),
