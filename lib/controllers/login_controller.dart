@@ -31,7 +31,6 @@ class LoginController extends GetxController {
           final String jwt = json['jwt'];
           final SharedPreferences prefs = await _prefs;
           await prefs.setString('jwt', jwt);
-          print('El jwt en login: ' + jwt);
 
           // Obtener y almacenar nombres si está presente
           if (json['nombres'] != null) {

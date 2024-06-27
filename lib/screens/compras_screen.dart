@@ -172,7 +172,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
               ),
               SizedBox(height: 20),
               Text(
-                'Nueva Línea de Compra',
+                'Añadir Chatarras',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 10),
