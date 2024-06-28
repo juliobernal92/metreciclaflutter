@@ -13,9 +13,7 @@ class ChatarraScreen extends StatefulWidget {
 }
 
 class _ChatarraScreenState extends State<ChatarraScreen> {
-  late ChatarraController
-      _chatarraController; // Declara _chatarraController como late
-
+  late ChatarraController _chatarraController;
   List<Map<String, dynamic>> _chatarras = [];
   bool _isLoading = false;
 

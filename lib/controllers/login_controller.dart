@@ -47,7 +47,8 @@ class LoginController extends GetxController {
           throw 'Usuario o Contraseña incorrectos';
         }
       } else {
-        throw 'Error: ${response.statusCode} - ${response.body}';
+        throw 'Usuario o Contraseña incorrectos';
+        //throw 'Error: ${response.statusCode} - ${response.body}';
       }
     } catch (error) {
       Get.back();

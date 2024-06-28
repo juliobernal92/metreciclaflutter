@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:metrecicla_app/controllers/api_interceptor.dart';
+import 'package:metrecicla_app/controllers/compras_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ComprasScreen extends StatefulWidget {
   const ComprasScreen({super.key});
@@ -8,31 +13,74 @@ class ComprasScreen extends StatefulWidget {
 }
 
 class _ComprasScreenState extends State<ComprasScreen> {
-  final TextEditingController idVendedorController = TextEditingController();
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+
+  final TextEditingController idProveedorController = TextEditingController();
   final TextEditingController nombreController = TextEditingController();
   final TextEditingController telefonoController = TextEditingController();
   final TextEditingController direccionController = TextEditingController();
   final TextEditingController fechaController = TextEditingController();
   final TextEditingController precioController = TextEditingController();
   final TextEditingController cantidadController = TextEditingController();
+  String _idproveedor = '';
+  String? _selectedChatarra;
 
   final List<Map<String, dynamic>> detallesCompra = [];
+  late ComprasController _comprasController;
 
-  void addDetalleCompra() {
-    setState(() {
-      detallesCompra.add({
-        'id': detallesCompra.length + 1,
-        'detalles':
-            'Chatarra', // Puedes reemplazar esto con el valor seleccionado del dropdown
-        'cantidad': cantidadController.text,
-        'precio': precioController.text,
-        'subtotal': (double.parse(precioController.text) *
-                double.parse(cantidadController.text))
-            .toString(),
+  final List<String> _chatarras = [
+    'Chatarra 1',
+    'Chatarra 2',
+    'Chatarra 3',
+    'Chatarra 4',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Configura la fecha actual al inicializar el estado
+    final DateTime now = DateTime.now();
+    fechaController.text =
+        "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    _comprasController = ComprasController(ApiInterceptor(context));
+    _comprasController.idProveedorController = idProveedorController;
+  }
+
+  void _loadSavedData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? idprov = prefs.getString("id_proveedor");
+
+    if (idprov != null && idprov.isNotEmpty) {
+      idProveedorController.text = idprov;
+      print("EL ID PROVEEDOR PASANDO: $idprov");
+    }
+  }
+
+  void loadsavedataid() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? nombre = prefs.getString("nombre");
+    if (nombre != null) {
+      print("EL NOMBRE RECUPERADO: $nombre");
+      setState(() {
+        nombreController.text = nombre;
       });
-      cantidadController.clear();
-      precioController.clear();
-    });
+    }
+
+    String? telefono = prefs.getString("telefono");
+    if (telefono != null) {
+      print("EL TELEFONO RECUPERADO: $telefono");
+      setState(() {
+        telefonoController.text = telefono;
+      });
+    }
+
+    String? direccion = prefs.getString("direccion");
+    if (direccion != null) {
+      print("LA DIRECCIÓN RECUPERADA: $direccion");
+      setState(() {
+        direccionController.text = direccion;
+      });
+    }
   }
 
   void showDeleteConfirmationDialog(int index) {
@@ -105,131 +153,128 @@ class _ComprasScreenState extends State<ComprasScreen> {
                         children: [
                           Expanded(
                             child: TextField(
-                              controller: idVendedorController,
+                              controller: idProveedorController,
                               decoration: const InputDecoration(
-                                  labelText: 'ID Vendedor'),
-                              keyboardType: TextInputType.number,
+                                  labelText: 'ID Proveedor'),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: nombreController,
-                              decoration:
-                                  const InputDecoration(labelText: 'Nombre'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: telefonoController,
-                              decoration:
-                                  const InputDecoration(labelText: 'Teléfono'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: direccionController,
-                              decoration:
-                                  const InputDecoration(labelText: 'Dirección'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _selectDate(context),
-                              child: AbsorbPointer(
-                                child: TextField(
-                                  controller: fechaController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Fecha',
-                                    suffixIcon: Icon(Icons.calendar_today),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Lógica para añadir proveedor
+                          IconButton(
+                            onPressed: () async {
+                              await _comprasController.addporIdProveedor(
+                                  idProveedorController.text);
+                              loadsavedataid();
                             },
-                            child: const Text('Añadir'),
+                            icon: const Icon(Icons.search),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: nombreController,
+                        decoration: const InputDecoration(labelText: 'Nombre'),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: direccionController,
+                        decoration:
+                            const InputDecoration(labelText: 'Dirección'),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: telefonoController,
+                        decoration:
+                            const InputDecoration(labelText: 'Teléfono'),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () async {
+                          if (idProveedorController.text.isEmpty) {
+                            await _comprasController.addProveedor(
+                              nombreController.text,
+                              direccionController.text,
+                              telefonoController.text,
+                            );
+                            _loadSavedData();
+                          } else {
+                            Get.snackbar(
+                              'Error',
+                              'Ya añadiste un proveedor',
+                              backgroundColor: Colors.red,
+                              colorText: Colors.white,
+                              icon: const Icon(
+                                Icons.error,
+                                color: Colors.white,
+                              ),
+                              snackPosition: SnackPosition.TOP,
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                        ),
+                        child: const Text('Guardar Proveedor'),
                       ),
                     ],
                   );
                 },
               ),
-              const SizedBox(height: 20),
+              const Divider(
+                height: 40,
+                thickness: 2,
+              ),
               const Text(
-                'Añadir Chatarras',
+                'Detalles de Compra',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  return Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              items: const [
-                                DropdownMenuItem(
-                                    value: '1', child: Text('Chatarra 1')),
-                                DropdownMenuItem(
-                                    value: '2', child: Text('Chatarra 2')),
-                              ],
-                              onChanged: (value) {
-                                // Lógica para manejar la selección
-                              },
-                              decoration:
-                                  const InputDecoration(labelText: 'Chatarra'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: precioController,
-                              decoration:
-                                  const InputDecoration(labelText: 'Precio'),
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: cantidadController,
-                              decoration:
-                                  const InputDecoration(labelText: 'Cantidad'),
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: addDetalleCompra,
-                            child: const Text('Añadir'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  );
+              TextField(
+                controller: fechaController,
+                decoration: const InputDecoration(labelText: 'Fecha'),
+                onTap: () {
+                  _selectDate(context);
                 },
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: _selectedChatarra,
+                decoration: const InputDecoration(labelText: 'Chatarra'),
+                items: _chatarras.map((String chatarra) {
+                  return DropdownMenuItem<String>(
+                    value: chatarra,
+                    child: Text(chatarra),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedChatarra = newValue!;
+                  });
+                },
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: precioController,
+                decoration: const InputDecoration(labelText: 'Precio'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: cantidadController,
+                decoration: const InputDecoration(labelText: 'Cantidad'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    detallesCompra.add({
+                      'id_chatarra': _selectedChatarra,
+                      'precio': precioController.text,
+                      'cantidad': cantidadController.text,
+                    });
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                ),
+                child: const Text('Añadir Detalle de Compra'),
               ),
               const SizedBox(height: 20),
               const Text(
@@ -237,73 +282,47 @@ class _ComprasScreenState extends State<ComprasScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-              Table(
-                border: TableBorder.all(),
-                children: [
-                  const TableRow(
-                    children: [
-                      TableCell(
-                          child: Padding(
-                              padding: EdgeInsets.all(8.0), child: Text('ID'))),
-                      TableCell(
-                          child: Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text('Detalles'))),
-                      TableCell(
-                          child: Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text('Cantidad'))),
-                      TableCell(
-                          child: Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text('Precio'))),
-                      TableCell(
-                          child: Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text('Subtotal'))),
-                      TableCell(
-                          child: Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text('Acciones'))),
-                    ],
-                  ),
-                  ...detallesCompra.map(
-                    (detalle) => TableRow(
-                      children: [
-                        TableCell(
-                            child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(detalle['id'].toString()))),
-                        TableCell(
-                            child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(detalle['detalles']))),
-                        TableCell(
-                            child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(detalle['cantidad']))),
-                        TableCell(
-                            child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(detalle['precio']))),
-                        TableCell(
-                            child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(detalle['subtotal']))),
-                        TableCell(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () => showDeleteConfirmationDialog(
-                                  detallesCompra.indexOf(detalle)),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columns: const [
+                    DataColumn(label: Text('ID')),
+                    DataColumn(label: Text('Detalles')),
+                    DataColumn(label: Text('Cantidad')),
+                    DataColumn(label: Text('Precio')),
+                    DataColumn(label: Text('Subtotal')),
+                    DataColumn(label: Text('Acciones')),
+                  ],
+                  rows: detallesCompra.map((detalle) {
+                    return DataRow(
+                      cells: [
+                        DataCell(Text(detalle['id_chatarra'].toString())),
+                        DataCell(Text(
+                            'Detalles')), // Puedes ajustar esto según tu lógica
+                        DataCell(Text(detalle['cantidad'])),
+                        DataCell(Text(detalle['precio'])),
+                        DataCell(Text((double.parse(detalle['precio']) *
+                                double.parse(detalle['cantidad']))
+                            .toString())),
+                        DataCell(Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () {},
                             ),
-                          ),
-                        ),
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () {
+                                showDeleteConfirmationDialog(
+                                    detallesCompra.indexOf(detalle));
+                              },
+                            ),
+                          ],
+                        )),
                       ],
-                    ),
-                  ),
-                ],
+                    );
+                  }).toList(),
+                ),
               ),
               const SizedBox(height: 20),
               ElevatedButton(

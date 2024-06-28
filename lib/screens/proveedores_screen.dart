@@ -31,7 +31,7 @@ class _ProveedoresScreenState extends State<ProveedoresScreen> {
     });
 
     try {
-      final String jwt = await _getStoredJwtToken();
+      //final String jwt = await _getStoredJwtToken();
       List<Map<String, dynamic>> chatarras =
           await _proveedoresController.fetchProveedores();
 
