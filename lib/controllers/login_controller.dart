@@ -5,12 +5,14 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:metrecicla_app/utils/api_endpoints.dart';
 import 'package:metrecicla_app/screens/home.dart';
-import 'package:metrecicla_app/services/auth_service.dart'; // Importar AuthService
+import 'package:metrecicla_app/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Importar AuthService
 
 class LoginController extends GetxController {
   final AuthService authService = AuthService(); // Instanciar AuthService
   TextEditingController txtCedulaController = TextEditingController();
   TextEditingController txtPasswordController = TextEditingController();
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
 
   Future<void> loginUsuario() async {
     var headers = {'Content-Type': 'application/json'};
@@ -33,6 +35,9 @@ class LoginController extends GetxController {
 
           // Guardar el JWT usando AuthService
           await authService.saveJwt(jwt);
+          final String nombres = json['nombres'];
+          final SharedPreferences prefs = await _prefs;
+          await prefs.setString('nombres', nombres);
 
           txtCedulaController.clear();
           txtPasswordController.clear();

@@ -40,18 +40,18 @@ class _ComprasScreenState extends State<ComprasScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Confirmar Eliminación'),
-          content: Text(
+          title: const Text('Confirmar Eliminación'),
+          content: const Text(
               '¿Estás seguro de que deseas eliminar este detalle de compra?'),
           actions: <Widget>[
             TextButton(
-              child: Text('Cancelar'),
+              child: const Text('Cancelar'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Eliminar'),
+              child: const Text('Eliminar'),
               onPressed: () {
                 setState(() {
                   detallesCompra.removeAt(index);
@@ -84,7 +84,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Compras'),
+        title: const Text('Compras'),
         backgroundColor: Colors.green,
       ),
       body: Padding(
@@ -92,11 +92,11 @@ class _ComprasScreenState extends State<ComprasScreen> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              Text(
+              const Text(
                 'Añadir Proveedor',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               LayoutBuilder(
                 builder: (context, constraints) {
                   return Column(
@@ -106,41 +106,42 @@ class _ComprasScreenState extends State<ComprasScreen> {
                           Expanded(
                             child: TextField(
                               controller: idVendedorController,
-                              decoration:
-                                  InputDecoration(labelText: 'ID Vendedor'),
+                              decoration: const InputDecoration(
+                                  labelText: 'ID Vendedor'),
                               keyboardType: TextInputType.number,
                             ),
                           ),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: TextField(
                               controller: nombreController,
-                              decoration: InputDecoration(labelText: 'Nombre'),
+                              decoration:
+                                  const InputDecoration(labelText: 'Nombre'),
                             ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       Row(
                         children: [
                           Expanded(
                             child: TextField(
                               controller: telefonoController,
                               decoration:
-                                  InputDecoration(labelText: 'Teléfono'),
+                                  const InputDecoration(labelText: 'Teléfono'),
                             ),
                           ),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: TextField(
                               controller: direccionController,
                               decoration:
-                                  InputDecoration(labelText: 'Dirección'),
+                                  const InputDecoration(labelText: 'Dirección'),
                             ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       Row(
                         children: [
                           Expanded(
@@ -149,7 +150,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
                               child: AbsorbPointer(
                                 child: TextField(
                                   controller: fechaController,
-                                  decoration: InputDecoration(
+                                  decoration: const InputDecoration(
                                     labelText: 'Fecha',
                                     suffixIcon: Icon(Icons.calendar_today),
                                   ),
@@ -157,12 +158,12 @@ class _ComprasScreenState extends State<ComprasScreen> {
                               ),
                             ),
                           ),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           ElevatedButton(
                             onPressed: () {
                               // Lógica para añadir proveedor
                             },
-                            child: Text('Añadir'),
+                            child: const Text('Añadir'),
                           ),
                         ],
                       ),
@@ -170,12 +171,12 @@ class _ComprasScreenState extends State<ComprasScreen> {
                   );
                 },
               ),
-              SizedBox(height: 20),
-              Text(
+              const SizedBox(height: 20),
+              const Text(
                 'Añadir Chatarras',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               LayoutBuilder(
                 builder: (context, constraints) {
                   return Column(
@@ -184,44 +185,45 @@ class _ComprasScreenState extends State<ComprasScreen> {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              items: [
+                              items: const [
                                 DropdownMenuItem(
-                                    child: Text('Chatarra 1'), value: '1'),
+                                    value: '1', child: Text('Chatarra 1')),
                                 DropdownMenuItem(
-                                    child: Text('Chatarra 2'), value: '2'),
+                                    value: '2', child: Text('Chatarra 2')),
                               ],
                               onChanged: (value) {
                                 // Lógica para manejar la selección
                               },
                               decoration:
-                                  InputDecoration(labelText: 'Chatarra'),
+                                  const InputDecoration(labelText: 'Chatarra'),
                             ),
                           ),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: TextField(
                               controller: precioController,
-                              decoration: InputDecoration(labelText: 'Precio'),
+                              decoration:
+                                  const InputDecoration(labelText: 'Precio'),
                               keyboardType: TextInputType.number,
                             ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       Row(
                         children: [
                           Expanded(
                             child: TextField(
                               controller: cantidadController,
                               decoration:
-                                  InputDecoration(labelText: 'Cantidad'),
+                                  const InputDecoration(labelText: 'Cantidad'),
                               keyboardType: TextInputType.number,
                             ),
                           ),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           ElevatedButton(
                             onPressed: addDetalleCompra,
-                            child: Text('Añadir'),
+                            child: const Text('Añadir'),
                           ),
                         ],
                       ),
@@ -229,40 +231,39 @@ class _ComprasScreenState extends State<ComprasScreen> {
                   );
                 },
               ),
-              SizedBox(height: 20),
-              Text(
+              const SizedBox(height: 20),
+              const Text(
                 'Detalles de Compra',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Table(
                 border: TableBorder.all(),
                 children: [
-                  TableRow(
+                  const TableRow(
                     children: [
                       TableCell(
                           child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text('ID'))),
+                              padding: EdgeInsets.all(8.0), child: Text('ID'))),
                       TableCell(
                           child: Padding(
-                              padding: const EdgeInsets.all(8.0),
+                              padding: EdgeInsets.all(8.0),
                               child: Text('Detalles'))),
                       TableCell(
                           child: Padding(
-                              padding: const EdgeInsets.all(8.0),
+                              padding: EdgeInsets.all(8.0),
                               child: Text('Cantidad'))),
                       TableCell(
                           child: Padding(
-                              padding: const EdgeInsets.all(8.0),
+                              padding: EdgeInsets.all(8.0),
                               child: Text('Precio'))),
                       TableCell(
                           child: Padding(
-                              padding: const EdgeInsets.all(8.0),
+                              padding: EdgeInsets.all(8.0),
                               child: Text('Subtotal'))),
                       TableCell(
                           child: Padding(
-                              padding: const EdgeInsets.all(8.0),
+                              padding: EdgeInsets.all(8.0),
                               child: Text('Acciones'))),
                     ],
                   ),
@@ -293,7 +294,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: IconButton(
-                              icon: Icon(Icons.delete),
+                              icon: const Icon(Icons.delete),
                               onPressed: () => showDeleteConfirmationDialog(
                                   detallesCompra.indexOf(detalle)),
                             ),
@@ -304,12 +305,12 @@ class _ComprasScreenState extends State<ComprasScreen> {
                   ),
                 ],
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   // Lógica para imprimir o guardar la compra
                 },
-                child: Text('Imprimir'),
+                child: const Text('Imprimir'),
               ),
             ],
           ),

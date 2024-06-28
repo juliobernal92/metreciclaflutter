@@ -6,8 +6,6 @@ import 'package:metrecicla_app/screens/chatarra_screen.dart';
 import 'package:metrecicla_app/screens/compras_screen.dart';
 import 'package:metrecicla_app/screens/login_screen.dart';
 import 'package:metrecicla_app/screens/proveedores_screen.dart';
-import 'package:metrecicla_app/screens/empleados_screen.dart';
-import 'package:metrecicla_app/services/auth_service.dart';
 
 class CustomColors {
   static const Color primaryColor = Color(0xFF4CAF50); // Verde principal
