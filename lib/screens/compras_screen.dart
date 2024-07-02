@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:metrecicla_app/controllers/api_interceptor.dart';
 import 'package:metrecicla_app/controllers/compras_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,27 +12,21 @@ class ComprasScreen extends StatefulWidget {
 }
 
 class _ComprasScreenState extends State<ComprasScreen> {
-  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
-
   final TextEditingController idProveedorController = TextEditingController();
+  final TextEditingController idChatarraController = TextEditingController();
   final TextEditingController nombreController = TextEditingController();
   final TextEditingController telefonoController = TextEditingController();
   final TextEditingController direccionController = TextEditingController();
   final TextEditingController fechaController = TextEditingController();
   final TextEditingController precioController = TextEditingController();
   final TextEditingController cantidadController = TextEditingController();
-  String _idproveedor = '';
-  String? _selectedChatarra;
+  final TextEditingController idTicketController = TextEditingController();
+  final TextEditingController idEmpleadoController = TextEditingController();
+  //String? _selectedChatarra;
+  Map<String, dynamic>? _selectedChatarra;
 
-  final List<Map<String, dynamic>> detallesCompra = [];
+  List<Map<String, dynamic>> detallesCompra = [];
   late ComprasController _comprasController;
-
-  final List<String> _chatarras = [
-    'Chatarra 1',
-    'Chatarra 2',
-    'Chatarra 3',
-    'Chatarra 4',
-  ];
 
   @override
   void initState() {
@@ -44,15 +37,24 @@ class _ComprasScreenState extends State<ComprasScreen> {
         "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
     _comprasController = ComprasController(ApiInterceptor(context));
     _comprasController.idProveedorController = idProveedorController;
+    _comprasController.idChatarraController = idChatarraController;
+    _comprasController.idTicketController = idTicketController;
+    _comprasController.idEmpleadoController = idEmpleadoController;
+    _comprasController.fechaController = fechaController;
+    _comprasController.cantidadController = cantidadController;
+    _comprasController.fetchChatarras();
   }
 
   void _loadSavedData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? idprov = prefs.getString("id_proveedor");
+    String? idempleado = prefs.getString("id_empleado");
+    if (idempleado != null && idempleado.isNotEmpty) {
+      idEmpleadoController.text = idempleado;
+    }
 
     if (idprov != null && idprov.isNotEmpty) {
       idProveedorController.text = idprov;
-      print("EL ID PROVEEDOR PASANDO: $idprov");
     }
   }
 
@@ -60,7 +62,6 @@ class _ComprasScreenState extends State<ComprasScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? nombre = prefs.getString("nombre");
     if (nombre != null) {
-      print("EL NOMBRE RECUPERADO: $nombre");
       setState(() {
         nombreController.text = nombre;
       });
@@ -68,7 +69,6 @@ class _ComprasScreenState extends State<ComprasScreen> {
 
     String? telefono = prefs.getString("telefono");
     if (telefono != null) {
-      print("EL TELEFONO RECUPERADO: $telefono");
       setState(() {
         telefonoController.text = telefono;
       });
@@ -76,7 +76,6 @@ class _ComprasScreenState extends State<ComprasScreen> {
 
     String? direccion = prefs.getString("direccion");
     if (direccion != null) {
-      print("LA DIRECCIÓN RECUPERADA: $direccion");
       setState(() {
         direccionController.text = direccion;
       });
@@ -111,6 +110,18 @@ class _ComprasScreenState extends State<ComprasScreen> {
         );
       },
     );
+  }
+
+// Método para cargar detalles de compra por idTicket
+  void _loadDetallesCompra(String idTicket) {
+    _comprasController.fetchDetallesCompraPorTicket(idTicket).then((detalles) {
+      setState(() {
+        detallesCompra = detalles;
+      });
+    }).catchError((error) {
+      print('Error al cargar detalles de compra: $error');
+      // Manejar el error según sea necesario
+    });
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -235,21 +246,31 @@ class _ComprasScreenState extends State<ComprasScreen> {
                 },
               ),
               const SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                value: _selectedChatarra,
-                decoration: const InputDecoration(labelText: 'Chatarra'),
-                items: _chatarras.map((String chatarra) {
-                  return DropdownMenuItem<String>(
-                    value: chatarra,
-                    child: Text(chatarra),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedChatarra = newValue!;
-                  });
-                },
+              TextField(
+                controller: idChatarraController,
+                decoration: const InputDecoration(labelText: 'Id Chatarra'),
               ),
+              const SizedBox(height: 10),
+              Obx(() {
+                return DropdownButtonFormField<Map<String, dynamic>>(
+                  value: _selectedChatarra,
+                  decoration: const InputDecoration(labelText: 'Chatarras'),
+                  items: _comprasController.chatarras.map((chatarra) {
+                    return DropdownMenuItem<Map<String, dynamic>>(
+                      value: chatarra,
+                      child: Text(chatarra['nombre']),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedChatarra = value;
+                      idChatarraController.text =
+                          value?['id_chatarra'].toString() ?? '';
+                      precioController.text = value?['precio'].toString() ?? '';
+                    });
+                  },
+                );
+              }),
               const SizedBox(height: 10),
               TextField(
                 controller: precioController,
@@ -262,14 +283,33 @@ class _ComprasScreenState extends State<ComprasScreen> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    detallesCompra.add({
-                      'id_chatarra': _selectedChatarra,
-                      'precio': precioController.text,
-                      'cantidad': cantidadController.text,
-                    });
-                  });
+                onPressed: () async {
+                  SharedPreferences prefs =
+                      await SharedPreferences.getInstance();
+                  int? idemp = prefs.getInt('id_empleado');
+                  idEmpleadoController.text = idemp.toString();
+
+                  String? idTicket;
+                  if (idTicketController.text.isEmpty) {
+                    idTicket = await _comprasController.addTicketCompra(
+                      fechaController.text,
+                      idProveedorController.text,
+                      idEmpleadoController.text,
+                    );
+                  } else {
+                    idTicket = idTicketController.text;
+                    _loadDetallesCompra(idTicket);
+                  }
+
+                  if (idTicket != null) {
+                    await _comprasController.addDetalleCompraOK(
+                      idChatarraController.text,
+                      idTicket,
+                      cantidadController.text,
+                      precioController.text,
+                    );
+                    _loadDetallesCompra(idTicket);
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
@@ -287,7 +327,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
                 child: DataTable(
                   columns: const [
                     DataColumn(label: Text('ID')),
-                    DataColumn(label: Text('Detalles')),
+                    DataColumn(label: Text('Nombre')),
                     DataColumn(label: Text('Cantidad')),
                     DataColumn(label: Text('Precio')),
                     DataColumn(label: Text('Subtotal')),
@@ -296,19 +336,18 @@ class _ComprasScreenState extends State<ComprasScreen> {
                   rows: detallesCompra.map((detalle) {
                     return DataRow(
                       cells: [
-                        DataCell(Text(detalle['id_chatarra'].toString())),
-                        DataCell(Text(
-                            'Detalles')), // Puedes ajustar esto según tu lógica
-                        DataCell(Text(detalle['cantidad'])),
-                        DataCell(Text(detalle['precio'])),
-                        DataCell(Text((double.parse(detalle['precio']) *
-                                double.parse(detalle['cantidad']))
-                            .toString())),
+                        DataCell(Text(detalle['id_detallecompra'].toString())),
+                        DataCell(Text(detalle['nombre'])),
+                        DataCell(Text(detalle['cantidad'].toString())),
+                        DataCell(Text(detalle['precio'].toString())),
+                        DataCell(Text(detalle['subtotal'].toString())),
                         DataCell(Row(
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit),
-                              onPressed: () {},
+                              onPressed: () {
+                                // Lógica para editar detalle de compra
+                              },
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete),

@@ -15,4 +15,6 @@ class EndPoints {
   final String addProveedoresService = 'proveedores.php';
   final String editProveedoresService = 'proveedores.php';
   final String deleteProveedoresService = 'proveedores.php';
+  final String addDetalleCompraService = 'detallescompra.php';
+  final String addTicketCompraService = 'ticketcompra.php';
 }

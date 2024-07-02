@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:http/http.dart' as http;
 import 'package:metrecicla_app/controllers/login_controller.dart';
 import 'package:metrecicla_app/screens/login_screen.dart';

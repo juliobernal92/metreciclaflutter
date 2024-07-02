@@ -3,10 +3,13 @@ import 'package:get/get.dart';
 import 'package:metrecicla_app/screens/login_screen.dart';
 import 'package:metrecicla_app/controllers/login_controller.dart';
 import 'package:metrecicla_app/controllers/api_interceptor.dart';
+import 'package:metrecicla_app/services/auth_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  Get.lazyPut<AuthService>(() => AuthService());
   Get.put(LoginController());
+
   runApp(const MyApp());
 }
 

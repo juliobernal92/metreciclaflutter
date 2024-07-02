@@ -9,7 +9,9 @@ import 'package:metrecicla_app/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Importar AuthService
 
 class LoginController extends GetxController {
-  final AuthService authService = AuthService(); // Instanciar AuthService
+  final AuthService authService = Get.find();
+
+  //final AuthService authService = AuthService(); // Instanciar AuthService
   TextEditingController txtCedulaController = TextEditingController();
   TextEditingController txtPasswordController = TextEditingController();
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
@@ -38,6 +40,10 @@ class LoginController extends GetxController {
           final String nombres = json['nombres'];
           final SharedPreferences prefs = await _prefs;
           await prefs.setString('nombres', nombres);
+          // Guarda el id_empleado correctamente
+          final int idEmpleado = json['id'];
+          await prefs.setInt('id_empleado', idEmpleado);
+          print("ID AL INICIAR SESION: $idEmpleado");
 
           txtCedulaController.clear();
           txtPasswordController.clear();

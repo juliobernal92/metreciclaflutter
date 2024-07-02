@@ -11,8 +11,19 @@ class ComprasController extends GetxController {
   final ApiInterceptor apiInterceptor;
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   late TextEditingController idProveedorController;
+  late TextEditingController idChatarraController;
+  late TextEditingController idTicketController;
+  late TextEditingController fechaController;
+  late TextEditingController idEmpleadoController;
+  late TextEditingController cantidadController;
 
   ComprasController(this.apiInterceptor);
+  var chatarras = <Map<String, dynamic>>[].obs;
+  @override
+  void onInit() {
+    super.onInit();
+    fetchChatarras();
+  }
 
   Future<void> addProveedor(
       String nombre, String direccion, String telefono) async {
@@ -29,8 +40,6 @@ class ComprasController extends GetxController {
           'activo': 1,
         });
 
-        print('Request body: $body');
-
         final response = await apiInterceptor.post(
           url,
           headers: {
@@ -39,8 +48,6 @@ class ComprasController extends GetxController {
           },
           body: body,
         );
-
-        print('Response: ${response.statusCode} ${response.body}');
 
         if (response.statusCode == 200) {
           final jsonResponse = jsonDecode(response.body);
@@ -90,10 +97,6 @@ class ComprasController extends GetxController {
           'Content-Type': 'application/json',
         },
       );
-      print('URL enviada: $url');
-      print('StatusCode: ${response.statusCode}');
-      print('Headers: ${response.headers}');
-      print('Body: ${response.body}');
       if (response.statusCode == 200) {
         Get.snackbar('Éxito', 'Proveedor cargado correctamente');
         final jsonResponse = jsonDecode(response.body);
@@ -117,11 +120,152 @@ class ComprasController extends GetxController {
     }
   }
 
-  void addDetalleCompra(String idChatarra, String precio, String cantidad) {
-    //no implementar todavia
+  Future<void> fetchChatarras() async {
+    try {
+      final jwt = await authService.getJwt();
+      final url = Uri.parse(
+          ApiEndPoints.baseUrl + ApiEndPoints.endpoints.getchatarrasService);
+
+      final response = await apiInterceptor.get(
+        url,
+        headers: {
+          'Cookie': 'jwt=$jwt',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        if (jsonResponse['data']['resultado'].isNotEmpty) {
+          chatarras.value =
+              List<Map<String, dynamic>>.from(jsonResponse['data']['resultado'])
+                  .cast<Map<String, dynamic>>();
+        } else {
+          Get.snackbar('Error', 'No se encontraron chatarras');
+        }
+      } else {
+        Get.snackbar(
+            'Error', 'Error al cargar chatarras: ${response.statusCode}');
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Error: $e');
+    }
+  }
+
+  Future<String?> addTicketCompra(
+      String fecha, String idProveedor, String idEmpleado) async {
+    try {
+      final jwt = await authService.getJwt();
+      final url = Uri.parse(
+          ApiEndPoints.baseUrl + ApiEndPoints.endpoints.addTicketCompraService);
+      final body = jsonEncode({
+        'fecha': fecha,
+        'id_proveedor': idProveedor,
+        'id_empleado': idEmpleado
+      });
+
+      final response = await apiInterceptor.post(
+        url,
+        headers: {
+          'Cookie': 'jwt=$jwt',
+          'Content-Type': 'application/json',
+        },
+        body: body,
+      );
+      print("body del ticket: " + body);
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final idTicket = jsonResponse['data']['id_ticketcompra'];
+
+        // Actualizar ID del ticket en SharedPreferences
+        final SharedPreferences prefs = await _prefs;
+        await prefs.setString('id_ticketcompra', idTicket);
+
+        // Actualizar el controlador de texto
+        idTicketController.text = idTicket;
+      } else {
+        Get.snackbar('Error', 'Error al añadir ticket: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Error: $e');
+      return null;
+    }
+  }
+
+  Future<void> addDetalleCompraOK(String idChatarra, String idTicketCompra,
+      String cantidadStr, String precioStr) async {
+    try {
+      // Convertir las cadenas de texto a números
+      double cantidad = double.parse(cantidadStr);
+      int precio = int.parse(precioStr);
+
+      // Calcular el subtotal
+      var subtotal = cantidad * precio;
+
+      final jwt = await authService.getJwt();
+      final url = Uri.parse(ApiEndPoints.baseUrl +
+          ApiEndPoints.endpoints.addDetalleCompraService);
+      final body = jsonEncode({
+        'id_chatarra': idChatarra,
+        'id_ticketcompra': idTicketCompra,
+        'cantidad': cantidad,
+        'subtotal': subtotal,
+      });
+
+      final response = await apiInterceptor.post(
+        url,
+        headers: {
+          'Cookie': 'jwt=$jwt',
+          'Content-Type': 'application/json',
+        },
+        body: body,
+      );
+      print("body: " + body);
+      if (response.statusCode == 200) {
+        // Manejar la respuesta exitosa aquí
+      } else {
+        // Manejar la respuesta fallida aquí
+      }
+    } catch (e) {
+      // Manejar cualquier error aquí
+    }
   }
 
   void removeDetalleCompra(int index) {
     //no implementar todavia
+  }
+
+  Future<List<Map<String, dynamic>>> fetchDetallesCompraPorTicket(
+      String idTicket) async {
+    try {
+      final jwt = await authService.getJwt();
+
+      final url = Uri.parse(
+          '${ApiEndPoints.baseUrl + ApiEndPoints.endpoints.addDetalleCompraService}?id=${idTicket}');
+
+      final response = await apiInterceptor.get(
+        url,
+        headers: {
+          'Cookie': 'jwt=$jwt',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        if (jsonResponse['codigo'] == 200) {
+          return List<Map<String, dynamic>>.from(
+              jsonResponse['data']['resultado']);
+        } else {
+          throw Exception('Error al obtener detalles de compra');
+        }
+      } else {
+        throw Exception(
+            'Error al obtener detalles de compra: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
   }
 }
