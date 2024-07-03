@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:metrecicla_app/controllers/api_interceptor.dart';
 import 'package:metrecicla_app/controllers/compras_controller.dart';
+import 'package:metrecicla_app/screens/edit_detalle_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ComprasScreen extends StatefulWidget {
@@ -42,6 +43,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
     _comprasController.idEmpleadoController = idEmpleadoController;
     _comprasController.fechaController = fechaController;
     _comprasController.cantidadController = cantidadController;
+    _comprasController.precioController = precioController;
     _comprasController.fetchChatarras();
   }
 
@@ -112,7 +114,6 @@ class _ComprasScreenState extends State<ComprasScreen> {
     );
   }
 
-// Método para cargar detalles de compra por idTicket
   void _loadDetallesCompra(String idTicket) {
     _comprasController.fetchDetallesCompraPorTicket(idTicket).then((detalles) {
       setState(() {
@@ -339,14 +340,14 @@ class _ComprasScreenState extends State<ComprasScreen> {
                         DataCell(Text(detalle['id_detallecompra'].toString())),
                         DataCell(Text(detalle['nombre'])),
                         DataCell(Text(detalle['cantidad'].toString())),
-                        DataCell(Text(detalle['precio'].toString())),
+                        DataCell(Text(detalle['preciopagado'].toString())),
                         DataCell(Text(detalle['subtotal'].toString())),
                         DataCell(Row(
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit),
                               onPressed: () {
-                                // Lógica para editar detalle de compra
+                                _handleEditDetalle(detalle);
                               },
                             ),
                             IconButton(
@@ -375,5 +376,28 @@ class _ComprasScreenState extends State<ComprasScreen> {
         ),
       ),
     );
+  }
+
+  Future<String> _getStoredJwtToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('jwt') ?? '';
+  }
+
+  Future<void> _handleEditDetalle(Map<String, dynamic> detalle) async {
+    final updatedDetalle = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => EditDetalleDialog(detalle: detalle),
+    );
+
+    if (updatedDetalle != null) {
+      try {
+        final String jwt = await _getStoredJwtToken();
+        await _comprasController.updateDetalle(jwt, updatedDetalle);
+        final idTicket = idTicketController.text;
+        _loadDetallesCompra(idTicket);
+      } catch (e) {
+        print(e);
+      }
+    }
   }
 }

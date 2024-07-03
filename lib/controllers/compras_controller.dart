@@ -16,6 +16,7 @@ class ComprasController extends GetxController {
   late TextEditingController fechaController;
   late TextEditingController idEmpleadoController;
   late TextEditingController cantidadController;
+  late TextEditingController precioController;
 
   ComprasController(this.apiInterceptor);
   var chatarras = <Map<String, dynamic>>[].obs;
@@ -183,6 +184,7 @@ class ComprasController extends GetxController {
 
         // Actualizar el controlador de texto
         idTicketController.text = idTicket;
+        print("TICKET:" + idTicketController.text);
       } else {
         Get.snackbar('Error', 'Error al añadir ticket: ${response.statusCode}');
         return null;
@@ -191,10 +193,12 @@ class ComprasController extends GetxController {
       Get.snackbar('Error', 'Error: $e');
       return null;
     }
+    return null;
   }
 
   Future<void> addDetalleCompraOK(String idChatarra, String idTicketCompra,
       String cantidadStr, String precioStr) async {
+    print("EJECUTANDO ADD DETALLE COMPRA OK");
     try {
       // Convertir las cadenas de texto a números
       double cantidad = double.parse(cantidadStr);
@@ -207,12 +211,13 @@ class ComprasController extends GetxController {
       final url = Uri.parse(ApiEndPoints.baseUrl +
           ApiEndPoints.endpoints.addDetalleCompraService);
       final body = jsonEncode({
-        'id_chatarra': idChatarra,
         'id_ticketcompra': idTicketCompra,
+        'id_chatarra': idChatarra,
         'cantidad': cantidad,
+        'preciopagado': precio,
         'subtotal': subtotal,
       });
-
+      print("body en anadir detalle: " + body);
       final response = await apiInterceptor.post(
         url,
         headers: {
@@ -221,9 +226,12 @@ class ComprasController extends GetxController {
         },
         body: body,
       );
-      print("body: " + body);
+
       if (response.statusCode == 200) {
-        // Manejar la respuesta exitosa aquí
+        final jsonResponse = jsonDecode(response.body);
+        print("RESPUESTA DEL SERVIDOR: " + jsonResponse);
+        Get.snackbar('Éxito', 'Chatarra anhadida correctamente');
+        return jsonResponse['success'];
       } else {
         // Manejar la respuesta fallida aquí
       }
@@ -240,7 +248,6 @@ class ComprasController extends GetxController {
       String idTicket) async {
     try {
       final jwt = await authService.getJwt();
-
       final url = Uri.parse(
           '${ApiEndPoints.baseUrl + ApiEndPoints.endpoints.addDetalleCompraService}?id=${idTicket}');
 
@@ -266,6 +273,27 @@ class ComprasController extends GetxController {
       }
     } catch (e) {
       throw Exception('Error: $e');
+    }
+  }
+
+  Future<void> updateDetalle(String jwt, Map<String, dynamic> detalle) async {
+    final Uri url = Uri.parse(
+        '${ApiEndPoints.baseUrl + ApiEndPoints.endpoints.addDetalleCompraService}?id=${detalle['id']}');
+    final response = await apiInterceptor.put(
+      url,
+      headers: {
+        'Cookie': 'jwt=$jwt',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'id_detallecompra': detalle['id_detallecompra'],
+        'nuevaCantidad': detalle['cantidad'],
+        'nuevoPrecio': detalle['nuevoPrecio'],
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update detalle compra');
     }
   }
 }

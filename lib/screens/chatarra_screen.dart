@@ -30,7 +30,6 @@ class _ChatarraScreenState extends State<ChatarraScreen> {
     });
 
     try {
-      final String jwt = await _getStoredJwtToken();
       List<Map<String, dynamic>> chatarras =
           await _chatarraController.fetchChatarras();
 
