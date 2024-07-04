@@ -3,7 +3,11 @@ import 'package:get/get.dart';
 import 'package:metrecicla_app/controllers/api_interceptor.dart';
 import 'package:metrecicla_app/controllers/compras_controller.dart';
 import 'package:metrecicla_app/screens/edit_detalle_dialog.dart';
+import 'package:pdf/pdf.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class ComprasScreen extends StatefulWidget {
   const ComprasScreen({super.key});
@@ -44,6 +48,9 @@ class _ComprasScreenState extends State<ComprasScreen> {
     _comprasController.fechaController = fechaController;
     _comprasController.cantidadController = cantidadController;
     _comprasController.precioController = precioController;
+    _comprasController.nombreController = nombreController;
+    _comprasController.telefonoController = telefonoController;
+    _comprasController.direccionController = direccionController;
     _comprasController.fetchChatarras();
   }
 
@@ -114,15 +121,17 @@ class _ComprasScreenState extends State<ComprasScreen> {
     );
   }
 
-  void _loadDetallesCompra(String idTicket) {
-    _comprasController.fetchDetallesCompraPorTicket(idTicket).then((detalles) {
+  void _loadDetallesCompra(String idTicket) async {
+    try {
+      List<Map<String, dynamic>> detalles =
+          await _comprasController.fetchDetallesCompraPorTicket(idTicket);
       setState(() {
         detallesCompra = detalles;
       });
-    }).catchError((error) {
+    } catch (error) {
       print('Error al cargar detalles de compra: $error');
-      // Manejar el error según sea necesario
-    });
+      // Handle the error accordingly
+    }
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -297,9 +306,11 @@ class _ComprasScreenState extends State<ComprasScreen> {
                       idProveedorController.text,
                       idEmpleadoController.text,
                     );
+                    if (idTicket != null) {
+                      idTicketController.text = idTicket;
+                    }
                   } else {
                     idTicket = idTicketController.text;
-                    _loadDetallesCompra(idTicket);
                   }
 
                   if (idTicket != null) {
@@ -353,8 +364,7 @@ class _ComprasScreenState extends State<ComprasScreen> {
                             IconButton(
                               icon: const Icon(Icons.delete),
                               onPressed: () {
-                                showDeleteConfirmationDialog(
-                                    detallesCompra.indexOf(detalle));
+                                _handleDeleteDetalle(detalle);
                               },
                             ),
                           ],
@@ -364,11 +374,22 @@ class _ComprasScreenState extends State<ComprasScreen> {
                   }).toList(),
                 ),
               ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'TOTAL: ${NumberFormat.currency(locale: 'es_ES', symbol: '').format(calcularTotal())}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
-                  // Lógica para imprimir o guardar la compra
-                },
+                onPressed: generarPdfSiCamposCargados,
                 child: const Text('Imprimir'),
               ),
             ],
@@ -376,6 +397,14 @@ class _ComprasScreenState extends State<ComprasScreen> {
         ),
       ),
     );
+  }
+
+  double calcularTotal() {
+    double total = 0.0;
+    for (var detalle in detallesCompra) {
+      total += detalle['subtotal'];
+    }
+    return total;
   }
 
   Future<String> _getStoredJwtToken() async {
@@ -397,6 +426,140 @@ class _ComprasScreenState extends State<ComprasScreen> {
         _loadDetallesCompra(idTicket);
       } catch (e) {
         print(e);
+      }
+    }
+  }
+
+  //PDF
+  void generarPdfSiCamposCargados() {
+    // Validar campos requeridos
+    if (fechaController.text.isEmpty ||
+        nombreController.text.isEmpty ||
+        detallesCompra.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Todos los campos son requeridos para imprimir el ticket',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: const Icon(
+          Icons.error,
+          color: Colors.white,
+        ),
+        snackPosition: SnackPosition.TOP,
+      );
+    } else {
+      _generatePdf();
+    }
+  }
+
+  void _generatePdf() async {
+    final idTicket = idTicketController.text;
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                '------MET RECICLA------',
+                style:
+                    pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(
+                '---SUCURSAL LUQUE---',
+                style:
+                    pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text('TELEFONO: 0984-749327'),
+              pw.SizedBox(height: 10),
+              pw.Text('FECHA: ${fechaController.text}'),
+              pw.Text(
+                  'CLIENTE: ${nombreController.text.isEmpty ? "SIN NOMBRE" : nombreController.text}'),
+              pw.SizedBox(height: 10),
+              pw.Text('----------------------------'),
+              pw.Text('CANT  DESC  PREC  SUBT'),
+              pw.Text('----------------------------'),
+              ...detallesCompra.map((detalle) {
+                return pw.Text(
+                  '${detalle['cantidad']}  ${detalle['nombre']}  ${NumberFormat.currency(locale: 'es_ES', symbol: '').format(detalle['preciopagado'])}  ${NumberFormat.currency(locale: 'es_ES', symbol: '').format(detalle['subtotal'])}',
+                );
+              }),
+              pw.Text('----------------------------'),
+              pw.Text(
+                'TOTAL:                ${NumberFormat.currency(locale: 'es_ES', symbol: '').format(calcularTotal())}',
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      name: 'ticket_$idTicket.pdf',
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+    );
+    limpiarTodosLosCampos();
+  }
+
+  void limpiarTodosLosCampos() {
+    idTicketController.text = '';
+    fechaController.text = '';
+    nombreController.text = '';
+    cantidadController.text = '';
+    precioController.text = '';
+    idChatarraController.text = '';
+    idEmpleadoController.text = '';
+    idProveedorController.text = '';
+    direccionController.text = '';
+    telefonoController.text = '';
+
+    setState(() {
+      // Clear the DataTable data source
+      detallesCompra.clear();
+
+      // Reset the ComboBox to its initial value
+      _selectedChatarra = null;
+    });
+  }
+
+//ELIMINAR
+
+  Future<void> _handleDeleteDetalle(Map<String, dynamic> detalle) async {
+    bool? confirmDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Eliminación'),
+        content: const Text('¿Estás seguro de eliminar esta chatarra?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(false);
+            },
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop(true);
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmDelete == true) {
+      try {
+        final String jwt = await _getStoredJwtToken();
+        final int idDetalle = detalle['id_detallecompra'];
+
+        await _comprasController.deleteDetalle(jwt, idDetalle);
+        final idTicket = idTicketController.text;
+        _loadDetallesCompra(idTicket);
+      } catch (e) {
+        print('Error deleting detalle: $e');
       }
     }
   }

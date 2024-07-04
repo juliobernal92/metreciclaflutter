@@ -17,6 +17,9 @@ class ComprasController extends GetxController {
   late TextEditingController idEmpleadoController;
   late TextEditingController cantidadController;
   late TextEditingController precioController;
+  late TextEditingController nombreController;
+  late TextEditingController direccionController;
+  late TextEditingController telefonoController;
 
   ComprasController(this.apiInterceptor);
   var chatarras = <Map<String, dynamic>>[].obs;
@@ -28,6 +31,21 @@ class ComprasController extends GetxController {
 
   Future<void> addProveedor(
       String nombre, String direccion, String telefono) async {
+    if (nombre.isEmpty || direccion.isEmpty || telefono.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Todos los campos son requeridos',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: const Icon(
+          Icons.error,
+          color: Colors.white,
+        ),
+        snackPosition: SnackPosition.TOP,
+      );
+      return;
+    }
+
     if (idProveedorController.text.isEmpty) {
       try {
         final jwt = await authService.getJwt();
@@ -54,15 +72,11 @@ class ComprasController extends GetxController {
           final jsonResponse = jsonDecode(response.body);
           final idProveedor = jsonResponse['data']['id_proveedor'];
 
-          // Actualizar ID del proveedor en SharedPreferences
           final SharedPreferences prefs = await _prefs;
           await prefs.setString('id_proveedor', idProveedor);
 
-          // Actualizar el controlador de texto
           idProveedorController.text = idProveedor;
 
-          //print("Id que se recupera de json response: " + idProveedor);
-          //print("respuesta del servidor: " + jsonResponse);
           Get.snackbar('Éxito', 'Proveedor añadido correctamente');
         } else {
           Get.snackbar(
@@ -86,11 +100,26 @@ class ComprasController extends GetxController {
     }
   }
 
-  Future<void> addporIdProveedor(String idproveedor) async {
+  Future<void> addporIdProveedor(String idProveedor) async {
+    if (idProveedor.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'ID del proveedor es requerido',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: const Icon(
+          Icons.error,
+          color: Colors.white,
+        ),
+        snackPosition: SnackPosition.TOP,
+      );
+      return;
+    }
+
     try {
       final jwt = await authService.getJwt();
       final url = Uri.parse(
-          '${ApiEndPoints.baseUrl + ApiEndPoints.endpoints.getProveedoresService}?id=${idproveedor}');
+          '${ApiEndPoints.baseUrl + ApiEndPoints.endpoints.getProveedoresService}?id=${idProveedor}');
       final response = await apiInterceptor.get(
         url,
         headers: {
@@ -99,9 +128,9 @@ class ComprasController extends GetxController {
         },
       );
       if (response.statusCode == 200) {
-        Get.snackbar('Éxito', 'Proveedor cargado correctamente');
         final jsonResponse = jsonDecode(response.body);
         if (jsonResponse['data']['resultado'].isNotEmpty) {
+          Get.snackbar('Éxito', 'Proveedor cargado correctamente');
           final proveedor = jsonResponse['data']['resultado'][0];
           final nombre = proveedor['nombre'];
           final direccion = proveedor['direccion'];
@@ -113,8 +142,22 @@ class ComprasController extends GetxController {
           await prefs.setString('direccion', direccion);
           await prefs.setString('telefono', telefono);
         } else {
-          Get.snackbar('Error', 'No se encontró el proveedor');
+          Get.snackbar(
+              'Error', 'No se encontró el proveedor con el ID: $idProveedor');
+          // Limpiar campos en SharedPreferences o tomar otra acción según tu lógica
+          idProveedorController.clear();
+          nombreController.clear();
+          direccionController.clear();
+          telefonoController.clear();
+
+          final SharedPreferences prefs = await _prefs;
+          await prefs.remove('nombre');
+          await prefs.remove('direccion');
+          await prefs.remove('telefono');
         }
+      } else {
+        Get.snackbar(
+            'Error', 'Error al cargar proveedor: ${response.statusCode}');
       }
     } catch (e) {
       Get.snackbar('Error', 'Error al cargar proveedor');
@@ -155,6 +198,22 @@ class ComprasController extends GetxController {
 
   Future<String?> addTicketCompra(
       String fecha, String idProveedor, String idEmpleado) async {
+    // Validar campos requeridos
+    if (fecha.isEmpty || idProveedor.isEmpty || idEmpleado.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Todos los campos son requeridos',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        icon: const Icon(
+          Icons.error,
+          color: Colors.white,
+        ),
+        snackPosition: SnackPosition.TOP,
+      );
+      return null;
+    }
+
     try {
       final jwt = await authService.getJwt();
       final url = Uri.parse(
@@ -173,7 +232,6 @@ class ComprasController extends GetxController {
         },
         body: body,
       );
-      print("body del ticket: " + body);
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
         final idTicket = jsonResponse['data']['id_ticketcompra'];
@@ -184,7 +242,8 @@ class ComprasController extends GetxController {
 
         // Actualizar el controlador de texto
         idTicketController.text = idTicket;
-        print("TICKET:" + idTicketController.text);
+
+        return idTicket; // Devolver el ID del ticket creado
       } else {
         Get.snackbar('Error', 'Error al añadir ticket: ${response.statusCode}');
         return null;
@@ -193,16 +252,33 @@ class ComprasController extends GetxController {
       Get.snackbar('Error', 'Error: $e');
       return null;
     }
-    return null;
   }
 
   Future<void> addDetalleCompraOK(String idChatarra, String idTicketCompra,
       String cantidadStr, String precioStr) async {
-    print("EJECUTANDO ADD DETALLE COMPRA OK");
     try {
-      // Convertir las cadenas de texto a números
-      double cantidad = double.parse(cantidadStr);
-      int precio = int.parse(precioStr);
+      // Validar que los campos no estén vacíos
+      if (idChatarra.isEmpty ||
+          idTicketCompra.isEmpty ||
+          cantidadStr.isEmpty ||
+          precioStr.isEmpty) {
+        Get.snackbar('Error', 'Todos los campos son requeridos');
+        return;
+      }
+
+      // Convertir las cadenas de texto a números y validar que sean correctas
+      double? cantidad = double.tryParse(cantidadStr);
+      int? precio = int.tryParse(precioStr);
+
+      if (cantidad == null || precio == null) {
+        Get.snackbar(
+          'Error',
+          'Todos los campos son requeridos',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
 
       // Calcular el subtotal
       var subtotal = cantidad * precio;
@@ -217,7 +293,6 @@ class ComprasController extends GetxController {
         'preciopagado': precio,
         'subtotal': subtotal,
       });
-      print("body en anadir detalle: " + body);
       final response = await apiInterceptor.post(
         url,
         headers: {
@@ -229,19 +304,17 @@ class ComprasController extends GetxController {
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body);
-        print("RESPUESTA DEL SERVIDOR: " + jsonResponse);
-        Get.snackbar('Éxito', 'Chatarra anhadida correctamente');
+        idChatarraController.clear();
+        precioController.clear();
+        cantidadController.clear();
+        Get.snackbar('Éxito', 'Chatarra añadida correctamente');
         return jsonResponse['success'];
       } else {
-        // Manejar la respuesta fallida aquí
+        Get.snackbar('Error', 'Error al añadir');
       }
     } catch (e) {
-      // Manejar cualquier error aquí
+      Get.snackbar('Error', 'Error al añadir');
     }
-  }
-
-  void removeDetalleCompra(int index) {
-    //no implementar todavia
   }
 
   Future<List<Map<String, dynamic>>> fetchDetallesCompraPorTicket(
@@ -294,6 +367,31 @@ class ComprasController extends GetxController {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to update detalle compra');
+    }
+  }
+
+  //Eliminar detalle
+  Future<void> deleteDetalle(String jwt, int idDetalle) async {
+    try {
+      final Uri url = Uri.parse(ApiEndPoints.baseUrl +
+          ApiEndPoints.endpoints.addDetalleCompraService);
+
+      final response = await apiInterceptor.delete(
+        url,
+        headers: {
+          'Cookie': 'jwt=$jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'id_detallecompra': idDetalle,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to delete detalle');
+      }
+    } catch (e) {
+      throw Exception('Error deleting detalle: $e');
     }
   }
 }

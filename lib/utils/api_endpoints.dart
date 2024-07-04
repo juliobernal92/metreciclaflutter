@@ -1,6 +1,6 @@
 class ApiEndPoints {
   static const String baseUrl =
-      'http://192.168.0.7/metrecicla_api_v2/controllers/';
+      'http://metreciclaluque.alwaysdata.net/metrecicla_api_v2/controllers/';
   static EndPoints endpoints = EndPoints();
 }
 
